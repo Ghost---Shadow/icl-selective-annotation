@@ -500,46 +500,10 @@ def selective_annotation(args, **kwargs):
             args=args,
         )
     elif args.selective_annotation_method in QUERYLESS_SUBMODLIB_FUNCTIONS:
-        FunctionClass = getattr(submodlib.functions, args.selective_annotation_method)
-
-        sijs = compute_pairwise_similarities(
-            tensor1=kwargs["embeddings"],
-            sparse=False,
-            metric="cosine",
-            scaling="additive",
-        )
-        sijs = sijs.numpy()
-
-        if args.selective_annotation_method == "GraphCutFunction":
-            similarity_kernel_name = "ggsijs"
-            lambdaVal = 0.4
-        else:
-            similarity_kernel_name = "sijs"
-            lambdaVal = 1
-
-        universal_kwargs = {
-            "n": kwargs["embeddings"].shape[0],
-            "mode": "dense",
-            similarity_kernel_name: sijs,
-            "lambdaVal": lambdaVal,  # TODO: Sweep
-            "separate_rep": False,
-        }
-
-        if args.selective_annotation_method in [
-            "DisparitySumFunction",
-            "DisparityMinFunction",
-        ]:
-            optimizer_value = "NaiveGreedy"
-        else:
-            optimizer_value = "LazyGreedy"
-
-        filtered_kwargs = get_accepted_kwargs(FunctionClass, universal_kwargs)
-        wrapper = FunctionClass(**filtered_kwargs)
-        selected_indices_and_scores = wrapper.maximize(
-            budget=args.annotation_size,
-            optimizer=optimizer_value,
-        )
-        selected_indices = [idx for idx, _ in selected_indices_and_scores]
+        selective_annotation_method = args.selective_annotation_method
+        embeddings = kwargs['embeddings'] 
+        annotation_size = args.annotation_size
+        selected_indices = get_indices_submodlib_queryless(selective_annotation_method, embeddings, annotation_size)
 
     elif args.selective_annotation_method in QUERYFULL_SUBMODLIB_FUNCTIONS:
         query_args = copy.copy(args)
@@ -584,6 +548,52 @@ def selective_annotation(args, **kwargs):
         raise ValueError(
             f"The selective annotation method {args.selective_annotation_method} is not supported"
         )
+    return selected_indices
+
+
+def get_indices_submodlib_queryless(
+    selective_annotation_method, embeddings, annotation_size
+):
+    FunctionClass = getattr(submodlib.functions, selective_annotation_method)
+
+    sijs = compute_pairwise_similarities(
+        tensor1=embeddings,
+        sparse=False,
+        metric="cosine",
+        scaling="additive",
+    )
+    sijs = sijs.numpy()
+
+    if selective_annotation_method == "GraphCutFunction":
+        similarity_kernel_name = "ggsijs"
+        lambdaVal = 0.4
+    else:
+        similarity_kernel_name = "sijs"
+        lambdaVal = 1
+
+    universal_kwargs = {
+        "n": embeddings.shape[0],
+        "mode": "dense",
+        similarity_kernel_name: sijs,
+        "lambdaVal": lambdaVal,  # TODO: Sweep
+        "separate_rep": False,
+    }
+
+    if selective_annotation_method in [
+        "DisparitySumFunction",
+        "DisparityMinFunction",
+    ]:
+        optimizer_value = "NaiveGreedy"
+    else:
+        optimizer_value = "LazyGreedy"
+
+    filtered_kwargs = get_accepted_kwargs(FunctionClass, universal_kwargs)
+    wrapper = FunctionClass(**filtered_kwargs)
+    selected_indices_and_scores = wrapper.maximize(
+        budget=annotation_size,
+        optimizer=optimizer_value,
+    )
+    selected_indices = [idx for idx, _ in selected_indices_and_scores]
     return selected_indices
 
 
