@@ -1,7 +1,11 @@
 import json
 import os
 import pandas as pd
-from constants import TASK_NAMES, SELECTIVE_ANNOTATION_METHODS
+from constants import (
+    TASK_NAMES,
+    SELECTIVE_ANNOTATION_METHODS,
+    QUERYLESS_SUBMODLIB_FUNCTIONS_TWO_SEQUENCE,
+)
 
 OUTPUTS_DIR = "outputs"
 
@@ -66,3 +70,19 @@ file_name = f"soft_results_summary.csv"
 soft_df.to_csv(f"results_soft_summary.csv", index=False)
 
 print(f"Sorted CSV file has been created as {file_name}.")
+
+df = pd.read_csv(f"results_hard_summary.csv")
+
+# Filter the DataFrame based on the method
+df = df[df["method"].isin(QUERYLESS_SUBMODLIB_FUNCTIONS_TWO_SEQUENCE)]
+
+# Split the 'method' column into 'first_method' and 'second_method'
+split_methods = df["method"].str.split("-", expand=True)
+df["first_method"] = split_methods[0]
+df["second_method"] = split_methods[1]
+
+# Pivot the DataFrame
+pivoted_df = df.pivot(index="second_method", columns="first_method", values="average")
+
+# Print the pivoted DataFrame
+pivoted_df.to_csv(f"two_method_results_summary.csv")
