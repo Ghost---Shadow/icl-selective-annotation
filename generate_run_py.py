@@ -20,7 +20,7 @@ submit_dependant_jobs(
     time="12h",
     num_cores=12,
     num_gpus=1,
-    mem="200g",
+    mem="400g",
     gpu_type="a100_80gb",
     mail_log_file_when_done="krishnateja.k@ibm.com",
     mail_notification_on_start="krishnateja.k@ibm.com",
@@ -38,7 +38,11 @@ def main(model_name, subsample):
         file.write("run_commands = " + json.dumps(all_commands, indent=4))
 
         file.write("\n")
-        file.write(INVOKE_COMMAND.format(n_jobs=len(all_commands), model_name=model_name.split("/")[-1]))
+        file.write(
+            INVOKE_COMMAND.format(
+                n_jobs=len(all_commands), model_name=model_name.split("/")[-1]
+            )
+        )
 
     subprocess.Popen(["black", "run.py"]).communicate()
 
