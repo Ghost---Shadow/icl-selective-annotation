@@ -13,6 +13,7 @@ import submodlib
 from constants import (
     QUERYFULL_SUBMODLIB_FUNCTIONS,
     QUERYLESS_SUBMODLIB_FUNCTIONS,
+    QUERYLESS_SUBMODLIB_FUNCTIONS_TWO_SEQUENCE,
 )
 from utils import get_accepted_kwargs
 from MetaICL.utils.compute_similarity_kernel_torch import compute_pairwise_similarities
@@ -501,9 +502,30 @@ def selective_annotation(args, **kwargs):
         )
     elif args.selective_annotation_method in QUERYLESS_SUBMODLIB_FUNCTIONS:
         selective_annotation_method = args.selective_annotation_method
-        embeddings = kwargs['embeddings'] 
+        embeddings = kwargs["embeddings"]
         annotation_size = args.annotation_size
-        selected_indices = get_indices_submodlib_queryless(selective_annotation_method, embeddings, annotation_size)
+        selected_indices = get_indices_submodlib_queryless(
+            selective_annotation_method, embeddings, annotation_size
+        )
+
+    elif args.selective_annotation_method in QUERYLESS_SUBMODLIB_FUNCTIONS_TWO_SEQUENCE:
+        first_method, second_method = args.selective_annotation_method.split("-")
+        selective_annotation_method = first_method
+        embeddings = kwargs["embeddings"]
+        annotation_size = args.annotation_size * args.two_step_budget_multiplier
+        selected_indices = get_indices_submodlib_queryless(
+            selective_annotation_method, embeddings, annotation_size
+        )
+
+        selective_annotation_method = second_method
+        embeddings = kwargs["embeddings"][selected_indices]
+        annotation_size = args.annotation_size
+        selected_indices_local = get_indices_submodlib_queryless(
+            selective_annotation_method, embeddings, annotation_size
+        )
+
+        # Map selected_indices_local to actual indices in the original dataset
+        selected_indices = [selected_indices[i] for i in selected_indices_local]
 
     elif args.selective_annotation_method in QUERYFULL_SUBMODLIB_FUNCTIONS:
         query_args = copy.copy(args)

@@ -43,6 +43,7 @@ parser.add_argument(
 )
 parser.add_argument("--annotation_size", default=100, type=int)
 parser.add_argument("--seed", default=0, type=int)
+parser.add_argument("--two_step_budget_multiplier", default=2, type=int)
 parser.add_argument("--batch_size", default=10, type=int)
 parser.add_argument("--debug", action="store_true")
 args = parser.parse_args()
@@ -110,10 +111,10 @@ if __name__ == "__main__":
                     args.model_name, cache_dir=args.model_cache_dir
                 )
             data_module = MetaICLData(
-                method="direct", 
-                tokenizer = tokenizer,
-                max_length=1024, 
-                max_length_per_example=256
+                method="direct",
+                tokenizer=tokenizer,
+                max_length=1024,
+                max_length_per_example=256,
             )
             inference_model = MetaICLModel(args=args)
             inference_model.load()
@@ -206,7 +207,9 @@ if __name__ == "__main__":
                             one_test_example = json.load(f)
                         cur_train_data = one_test_example[1]
                         if args.model_name == "mistralai/Mistral-7B-Instruct-v0.2":
-                            cur_train_data[0]["input"] = "<s> " + cur_train_data[0]["input"]
+                            cur_train_data[0]["input"] = (
+                                "<s> " + cur_train_data[0]["input"]
+                            )
                         cur_input = {
                             "input": format_example(
                                 one_test_example[2], label_map=label_map, args=args
@@ -262,7 +265,9 @@ if __name__ == "__main__":
                         for idx in range(len(cur_train_data)):
                             cur_train_data[idx]["options"] = all_labels
                         if args.model_name == "mistralai/Mistral-7B-Instruct-v0.2":
-                            cur_train_data[0]["input"] = "<s> " + cur_train_data[0]["input"]
+                            cur_train_data[0]["input"] = (
+                                "<s> " + cur_train_data[0]["input"]
+                            )
                         cur_input = format_example(
                             one_test_example[2], label_map=label_map, args=args
                         )[0]

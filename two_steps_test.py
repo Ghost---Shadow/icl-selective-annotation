@@ -4,7 +4,11 @@ import unittest
 import torch
 from MetaICL.metaicl.data import MetaICLData
 from MetaICL.metaicl.model import MetaICLModel
-from constants import QUERYFULL_SUBMODLIB_FUNCTIONS, QUERYLESS_SUBMODLIB_FUNCTIONS
+from constants import (
+    QUERYFULL_SUBMODLIB_FUNCTIONS,
+    QUERYLESS_SUBMODLIB_FUNCTIONS,
+    QUERYLESS_SUBMODLIB_FUNCTIONS_TWO_SEQUENCE,
+)
 from get_task import get_task
 from two_steps import selective_annotation
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -43,6 +47,28 @@ class TestSelectiveAnnotation(unittest.TestCase):
                 args = type("", (), {})()
                 args.selective_annotation_method = method
                 args.annotation_size = 150
+                kwargs = {"embeddings": embeddings}
+
+                selected_indices = selective_annotation(args, **kwargs)
+
+                assert type(selected_indices) == list
+                assert type(selected_indices[0]) == int
+                assert len(selected_indices) == args.annotation_size
+
+    # python -m unittest two_steps_test.TestSelectiveAnnotation.test_submodlib_queryless_two_step -v
+    def test_submodlib_queryless_two_step(self):
+        num_embeddings = 300
+        embedding_dim = 128
+        embeddings = torch.randn(num_embeddings, embedding_dim)
+
+        for method in QUERYLESS_SUBMODLIB_FUNCTIONS_TWO_SEQUENCE:
+            print("-" * 80)
+            print(method)
+            with self.subTest(method=method):
+                args = type("", (), {})()
+                args.selective_annotation_method = method
+                args.annotation_size = 50
+                args.two_step_budget_multiplier = 2
                 kwargs = {"embeddings": embeddings}
 
                 selected_indices = selective_annotation(args, **kwargs)
